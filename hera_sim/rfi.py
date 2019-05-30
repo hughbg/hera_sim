@@ -1,9 +1,13 @@
 """A module for generating realistic HERA RFI."""
 
-from astropy.units import sday
+import attr
 import numpy as np
+from astropy.units import sday
+from attr import validators as vld
+from scipy import stats
 
 
+@attr.s(frozen=True, kw_only=True)
 class RfiStation:
     """
     Class for representing an RFI transmitter.
@@ -18,24 +22,116 @@ class RfiStation:
         std (float): default=10.
             standard deviation of transmission amplitude
         timescale (scalar): seconds, default=100.
-            timescale for sinusoidal variation in transmission amplitude'''
+            timescale for which signal is typically coherently "on"
     """
+    fq0 = attr.ib(converter=float, validator=vld.instance_of(float))
+    width = attr.ib(1e6, converter=float)
+    duty_cycle = attr.ib(1.0, converter=float)
+    strength = attr.ib(100.0, converter=float)
+    std = attr.ib(10.0, converter=float)
+    timescale = attr.ib(100.0, converter=float)
+    phase_dstn = attr.ib(stats.uniform(-np.pi, np.pi),
+                         validator=vld.instance_of(stats.rv_frozen))
 
-    def __init__(self, fq0, duty_cycle=1.0, strength=100.0, std=10.0, timescale=100.0):
-        self.fq0 = fq0
-        self.duty_cycle = duty_cycle
-        self.std = std
-        self.strength = strength
-        self.timescale = timescale
+    @width.validator
+    def _wdth_validator(self, att, val):
+        assert 0 < val < self.fq0
 
-    def gen_rfi(self, fqs, lsts, rfi=None):
+    @duty_cycle.validator
+    def _duty_cycle_validator(self, att, val):
+        assert 0 <= val <= 1
+
+    @strength.validator
+    def _strength_validator(self, att, val):
+        assert val >= 0
+
+    @std.validator
+    def _std_validator(self, att, val):
+        assert val > 0
+        assert val < self.strength / 5
+
+    @timescale.validator
+    def _timescale_validator(self, att, val):
+        assert val > 0
+
+    def get_probability_of_being_on(self, integration_time):
+        """
+        The probability of being "on" is not exactly the
+        duty cycle, because once on, they're typically on
+        for a while.
+
+        The probability is closer to X/(X - L*X + L), where
+        X is the duty cycle and L is the typical length (in bins)
+        """
+        l = int(self.timescale / integration_time)
+
+        if l < 1:
+            return self.duty_cycle
+        else:
+            return self.duty_cycle / (self.duty_cycle - l * self.timescale + l)
+
+    def determine_channels(self, freqs, nsigma=5):
+        return np.argwhere(
+            np.logical_and(
+                self.fq0 - self.width * nsigma <= freqs,
+                freqs <= self.fq0 + self.width * nsigma)
+        )[:, 0]
+
+    def lsts_to_time_offsets(self, lsts):
+
+        sid_day = sday.to("s")
+        dlst_to_sec = sid_day / (2 * np.pi)
+        times = lsts * dlst_to_sec
+        times -= times[0]
+
+        wraps = np.argwhere(np.diff(times) < 0)[:, 0]
+        for w in wraps:
+            times[(1 + w):] += sid_day
+
+        return times
+
+    def determine_times(self, lsts):
+        self.validate_lsts(lsts)
+
+        # get a series of time offsets (from first lsts)
+        times = self.lsts_to_time_offsets(lsts)
+
+        intg_time = times[1] - times[0]
+        prob = self.get_probability_of_being_on(intg_time)
+
+        # Determine which times should be "on"
+        current_indx = 0
+
+        on_lsts = []
+
+        while current_indx < len(times) - 1:
+            on = np.random.uniform() < prob
+
+            if on:
+                max_indx = np.argwhere(times > times[current_indx] + self.timescale)[0, 0] - 1
+                on_lsts += range(current_indx, max_indx)
+                current_indx = max_indx + 1
+            else:
+                current_indx += 1
+
+        on_lsts = np.array(on_lsts)
+        return on_lsts[on_lsts < len(lsts)]
+
+    def validate_lsts(self, lsts):
+        dlst = np.diff(lsts)
+        assert np.all(np.logical_or(dlst > 0, dlst > 2 * np.pi)), "LSTs must be in increasing order"
+
+        ddlst = np.diff(dlst)
+        assert np.allclose(ddlst, 0), "LSTs must be regularly spaced"
+
+    def gen_rfi(self, freqs, lsts, rfi=None):
         """
         Generate an (NTIMES,NFREQS) waterfall containing RFI.
 
         Args:
             lsts (array-like): shape=(NTIMES,), radians
                 local sidereal times of the waterfall to be generated.
-            fqs (array-like): shape=(NFREQS,), GHz
+            freqs (array-like): shape=(NFREQS,), GHz
                 the spectral frequencies of the waterfall to be generated.
             rfi (array-like): shape=(NTIMES,NFREQS), default=None
                 an array to which the RFI will be added.  If None, a new array
@@ -44,56 +140,97 @@ class RfiStation:
             rfi (array-like): shape=(NTIMES,NFREQS)
                 a waterfall containing RFI
         """
-        sdf = np.average(fqs[1:] - fqs[:-1])
+        # Initialize RFI array
         if rfi is None:
-            rfi = np.zeros((lsts.size, fqs.size), dtype=np.complex)
-        assert rfi.shape == (lsts.size, fqs.size), "rfi is not shape (lsts.size, fqs.size)"
+            rfi = np.zeros((lsts.size, freqs.size), dtype=np.complex)
+        assert rfi.shape == (lsts.size, freqs.size), "rfi is not shape (lsts.size, fqs.size)"
 
-        try:
-            ch1 = np.argwhere(np.abs(fqs - self.fq0) < sdf)[0, 0]
-        except IndexError:
+        channels = self.determine_channels(freqs)
+        if len(channels) == 0:
+            # RFI does not appear in the set of frequencies given
             return rfi
-        if self.fq0 > fqs[ch1]:
-            ch2 = ch1 + 1
-        else:
-            ch2 = ch1 - 1
-        phs1, phs2 = np.random.uniform(0, 2 * np.pi, size=2)
-        signal = 0.999 * np.cos(
-            lsts * sday.to("s") / self.timescale + phs1
-        ) + 2 * (self.duty_cycle - 0.5)
-        signal = np.where(
-            signal > 0, np.random.normal(self.strength, self.std) * np.exp(1j * phs2), 0
-        )
-        rfi[:, ch1] += signal * (1 - np.abs(fqs[ch1] - self.fq0) / sdf).clip(0, 1)
-        rfi[:, ch2] += signal * (1 - np.abs(fqs[ch2] - self.fq0) / sdf).clip(0, 1)
+
+        times = self.determine_times(lsts)
+
+        # Draw amplitudes and phases
+        phases = self.phase_dstn.rvs(size=(times.size, channels.size))
+        amplitudes = stats.norm(loc=self.strength, scale=self.std).rvs(size=(times.size, channels.size))
+
+        rfi[times][channels] += amplitudes * np.exp(2j * np.pi * phases)
         return rfi
 
 
 HERA_RFI_STATIONS = [
     # FM Stations
-    (0.1007, 1.0, 1000 * 100.0, 10.0, 100.0),
-    (0.1016, 1.0, 1000 * 100.0, 10.0, 100.0),
-    (0.1024, 1.0, 1000 * 100.0, 10.0, 100.0),
-    (0.1028, 1.0, 1000 * 3.0, 1.0, 100.0),
-    (0.1043, 1.0, 1000 * 100.0, 10.0, 100.0),
-    (0.1050, 1.0, 1000 * 10.0, 3.0, 100.0),
-    (0.1052, 1.0, 1000 * 100.0, 10.0, 100.0),
-    (0.1061, 1.0, 1000 * 100.0, 10.0, 100.0),
-    (0.1064, 1.0, 1000 * 10.0, 3.0, 100.0),
-
-    # Orbcomm
-    (0.1371, 0.2, 1000 * 100.0, 3.0, 600.0),
-    (0.1372, 0.2, 1000 * 100.0, 3.0, 600.0),
-    (0.1373, 0.2, 1000 * 100.0, 3.0, 600.0),
-    (0.1374, 0.2, 1000 * 100.0, 3.0, 600.0),
-    (0.1375, 0.2, 1000 * 100.0, 3.0, 600.0),
-    # Other
-    (0.1831, 1.0, 1000 * 100.0, 30.0, 1000),
-    (0.1891, 1.0, 1000 * 2.0, 1.0, 1000),
-    (0.1911, 1.0, 1000 * 100.0, 30.0, 1000),
-    (0.1972, 1.0, 1000 * 100.0, 30.0, 1000),
-    # DC Offset from ADCs
-    # (.2000, 1., 100., 0., 10000),
+    RfiStation(
+        fq0=1.060e-01, width=7.581e-05, duty_cycle=1.00, strength=1.999e+05,
+        std=1.097e+04, timescale=np.inf, phase_dstn=stats.norm(0.51, 0.04)),
+    RfiStation(
+        fq0=1.376e-01, width=1.171e-04, duty_cycle=0.74, strength=4.243e+04,
+        std=2.714e+04, timescale=6.72e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.372e-01, width=4.636e-05, duty_cycle=0.40, strength=4.419e+04,
+        std=3.409e+04, timescale=3.62e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.373e-01, width=7.222e-05, duty_cycle=0.30, strength=7.749e+03,
+        std=1.151e+04, timescale=2.30e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.371e-01, width=4.603e-05, duty_cycle=0.53, strength=3.031e+02,
+        std=4.155e+02, timescale=3.06e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.370e-01, width=5.304e-05, duty_cycle=0.48, strength=1.731e+02,
+        std=1.714e+02, timescale=4.58e+02, phase_dstn=stats.norm(0.69, 0.83)),
+    RfiStation(
+        fq0=1.499e-01, width=3.489e-05, duty_cycle=1.00, strength=1.258e+03,
+        std=4.844e+02, timescale=np.inf, phase_dstn=stats.norm(-2.41, 0.30)),
+    RfiStation(
+        fq0=1.459e-01, width=5.471e-05, duty_cycle=0.30, strength=2.111e+02,
+        std=2.644e+02, timescale=1.39e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.832e-01, width=5.197e-05, duty_cycle=1.00, strength=7.962e+02,
+        std=9.578e+02, timescale=np.inf, phase_dstn=stats.norm(0.22, 0.21)),
+    RfiStation(
+        fq0=1.458e-01, width=5.001e-05, duty_cycle=0.32, strength=2.501e+02,
+        std=3.275e+02, timescale=1.51e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.050e-01, width=7.348e-05, duty_cycle=1.00, strength=1.075e+03,
+        std=1.044e+03, timescale=np.inf, phase_dstn=stats.norm(-1.62, 0.05)),
+    RfiStation(
+        fq0=1.457e-01, width=4.038e-05, duty_cycle=0.27, strength=1.087e+02,
+        std=1.243e+02, timescale=7.13e+01, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.912e-01, width=1.617e-04, duty_cycle=1.00, strength=3.563e+02,
+        std=3.740e+02, timescale=np.inf, phase_dstn=stats.norm(1.05, 0.30)),
+    RfiStation(
+        fq0=1.055e-01, width=6.966e-05, duty_cycle=0.99, strength=1.179e+02,
+        std=1.335e+02, timescale=1.20e+03, phase_dstn=stats.norm(1.40, 0.10)),
+    RfiStation(
+        fq0=1.064e-01, width=7.175e-05, duty_cycle=0.71, strength=1.400e+02,
+        std=1.545e+02, timescale=9.24e+01, phase_dstn=stats.norm(-1.45, 0.16)),
+    RfiStation(
+        fq0=1.751e-01, width=5.691e-05, duty_cycle=1.00, strength=1.016e+02,
+        std=9.531e+01, timescale=np.inf, phase_dstn=stats.norm(-1.57, 0.80)),
+    RfiStation(
+        fq0=1.063e-01, width=6.893e-05, duty_cycle=0.92, strength=9.980e+01,
+        std=1.057e+02, timescale=3.43e+02, phase_dstn=stats.norm(2.44, 0.14)),
+    RfiStation(
+        fq0=1.069e-01, width=1.283e-04, duty_cycle=0.86, strength=9.021e+01,
+        std=8.039e+01, timescale=1.78e+02, phase_dstn=stats.norm(-2.77, 0.26)),
+    RfiStation(
+        fq0=1.052e-01, width=7.576e-05, duty_cycle=1.00, strength=4.233e+01,
+        std=5.071e+01, timescale=8.50e+03, phase_dstn=stats.norm(-2.59, 0.30)),
+    RfiStation(
+        fq0=1.072e-01, width=8.233e-05, duty_cycle=0.50, strength=3.351e+01,
+        std=2.639e+01, timescale=5.99e+01, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.892e-01, width=4.631e-05, duty_cycle=1.00, strength=7.677e+01,
+        std=7.196e+01, timescale=np.inf, phase_dstn=stats.norm(2.07, 0.21)),
+    RfiStation(
+        fq0=1.057e-01, width=4.545e-05, duty_cycle=0.92, strength=9.260e+00,
+        std=6.854e+00, timescale=2.95e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+    RfiStation(
+        fq0=1.057e-01, width=7.239e-05, duty_cycle=0.89, strength=9.449e+00,
+        std=6.684e+00, timescale=2.85e+02, phase_dstn=stats.uniform(-np.pi, np.pi))
 ]
 
 
@@ -130,7 +267,7 @@ def rfi_stations(fqs, lsts, stations=HERA_RFI_STATIONS, rfi=None):
 
 
 # XXX reverse lsts and fqs?
-def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength=20.0):
+def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength=20.0, time_bins=1):
     """
     Generate an (NTIMES,NFREQS) waterfall containing RFI impulses that
     are localized in time but span the frequency band.
@@ -147,6 +284,8 @@ def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength=20.0):
             the probability that a time bin will be assigned an RFI impulse
         strength (float): Jy
             the strength of the impulse generated in each time/freq bin
+        time_bins (int):
+            The number of time bins that the signal lasts for.
     Returns:
         rfi (array-like): shape=(NTIMES,NFREQS)
             a waterfall containing RFI'''
