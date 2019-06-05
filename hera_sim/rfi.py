@@ -161,7 +161,6 @@ class RfiStation:
 
 
 HERA_RFI_STATIONS = [
-    # FM Stations
     RfiStation(
         fq0=1.060e-01, width=7.581e-05, duty_cycle=1.00, strength=1.999e+05,
         std=1.097e+04, timescale=np.inf, phase_dstn=stats.norm(0.51, 0.04)),
@@ -267,10 +266,12 @@ def rfi_stations(fqs, lsts, stations=HERA_RFI_STATIONS, rfi=None):
 
 
 # XXX reverse lsts and fqs?
-def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength=20.0, time_bins=1):
+def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength_mean=20.0,
+                strength_std=0.6, integration_time=10.7,
+                presence_frac=0.15, time_width_mean=10.7, time_width_std=0.6):
     """
     Generate an (NTIMES,NFREQS) waterfall containing RFI impulses that
-    are localized in time but span the frequency band.
+    are localized in time but span the entire frequency band.
 
     Args:
         fqs (array-like): shape=(NFREQS,), GHz
@@ -282,23 +283,50 @@ def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength=20.0, time_bins=1):
             is generated.
         chance (float):
             the probability that a time bin will be assigned an RFI impulse
-        strength (float): Jy
-            the strength of the impulse generated in each time/freq bin
-        time_bins (int):
-            The number of time bins that the signal lasts for.
+        strength_mean (float): Jy
+            the mean strength of the impulse generated in each time/freq bin
+        strength_std (float):
+            the std of the strengths of the impulses, *in log space*.
+        integration_time (float):
+            the integration time of the observation (or width of the time bins) [sec]
+        presence_frac (float):
+            defines the fraction of a time-bin that a nominal RFI must be "on" for
+            to render that time-bin as significantly RFI-contaminated.
+        time_width_mean (float):
+            the mean of the distribution of time widths of the impulses.
+        time_width_std (float):
+            the standard deviation of the distribution of time widths of the impulses
+            *in log space*.
+
     Returns:
         rfi (array-like): shape=(NTIMES,NFREQS)
-            a waterfall containing RFI'''
+            a waterfall containing RFI
+
+    See Also:
+        rfi_blip: generate waterfalls with short-time impulses that span a wide but
+                  not full selection of frequencies.
     """
     if rfi is None:
         rfi = np.zeros((lsts.size, fqs.size), dtype=np.complex)
     assert rfi.shape == (lsts.size, fqs.size), "rfi is not shape (lsts.size, fqs.size)"
 
+    # Find a fiducial random list of times at which full-band impulses arrive
     impulse_times = np.where(np.random.uniform(size=lsts.size) <= chance)[0]
-    dlys = np.random.uniform(-300, 300, size=impulse_times.size)  # ns
-    impulses = strength * np.array([np.exp(2j * np.pi * dly * fqs) for dly in dlys])
-    if impulses.size > 0:
-        rfi[impulse_times] += impulses
+
+    if impulse_times.size == 0:
+        return rfi
+
+    # Now generate random time-bin-widths of these times.
+    times = np.exp(np.random.normal(np.log(time_width_mean), time_width_std, size=len(impulse_times)))
+    full_bin_times = times // integration_time
+    full_bin_times[times % integration_time / integration_time > presence_frac] += 1
+
+    for impulse_time, width in zip(impulse_times, full_bin_times):
+        dlys = np.random.uniform(-300, 300, size=width)  # ns
+        strength = np.exp(np.random.normal(np.log(strength_mean), scale=strength_std))
+        impulses = strength * np.array([np.exp(2j * np.pi * dly * fqs) for dly in dlys])
+        rfi[impulse_time:impulse_time + width] += impulses
+
     return rfi
 
 
