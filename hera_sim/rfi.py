@@ -265,7 +265,6 @@ def rfi_stations(fqs, lsts, stations=HERA_RFI_STATIONS, rfi=None):
     return rfi
 
 
-# XXX reverse lsts and fqs?
 def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength_mean=20.0,
                 strength_std=0.6, integration_time=10.7,
                 presence_frac=0.15, time_width_mean=10.7, time_width_std=0.6):
@@ -328,6 +327,10 @@ def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength_mean=20.0,
         rfi[impulse_time:impulse_time + width] += impulses
 
     return rfi
+
+def rfi_blip(fqs, lsts, rfi=None, chance=0.001, strength_mean=20.0,
+             strength_std=0.6, bandwidth):
+    # should this be merged into a single function with arbitrary time- freq- width?
 
 
 # XXX reverse lsts and fqs?
