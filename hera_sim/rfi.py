@@ -162,74 +162,149 @@ class RfiStation:
 
 HERA_RFI_STATIONS = [
     RfiStation(
-        fq0=1.060e-01, width=7.581e-05, duty_cycle=1.00, strength=1.999e+05,
-        std=1.097e+04, timescale=np.inf, phase_dstn=stats.norm(0.51, 0.04)),
+        fq0=1.060e-01, width=7.137e-05, duty_cycle=1.00, strength=2.608e+01,
+        std=6.841e+00, timescale=np.inf, phase_dstn=stats.norm(0.53, 0.19)
+    ),
     RfiStation(
-        fq0=1.376e-01, width=1.171e-04, duty_cycle=0.74, strength=4.243e+04,
-        std=2.714e+04, timescale=6.72e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.372e-01, width=5.665e-05, duty_cycle=0.61, strength=3.847e+01,
+        std=1.432e+01, timescale=4.97e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.372e-01, width=4.636e-05, duty_cycle=0.40, strength=4.419e+04,
-        std=3.409e+04, timescale=3.62e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.376e-01, width=1.001e-04, duty_cycle=0.71, strength=3.941e+01,
+        std=1.513e+01, timescale=4.70e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.373e-01, width=7.222e-05, duty_cycle=0.30, strength=7.749e+03,
-        std=1.151e+04, timescale=2.30e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.370e-01, width=4.603e-05, duty_cycle=0.33, strength=3.297e+01,
+        std=1.529e+01, timescale=2.52e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.371e-01, width=4.603e-05, duty_cycle=0.53, strength=3.031e+02,
-        std=4.155e+02, timescale=3.06e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.374e-01, width=7.371e-05, duty_cycle=0.77, strength=3.873e+01,
+        std=1.565e+01, timescale=5.92e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.370e-01, width=5.304e-05, duty_cycle=0.48, strength=1.731e+02,
-        std=1.714e+02, timescale=4.58e+02, phase_dstn=stats.norm(0.69, 0.83)),
+        fq0=1.063e-01, width=7.993e-05, duty_cycle=0.95, strength=2.375e+01,
+        std=1.040e+01, timescale=5.07e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.499e-01, width=3.489e-05, duty_cycle=1.00, strength=1.258e+03,
-        std=4.844e+02, timescale=np.inf, phase_dstn=stats.norm(-2.41, 0.30)),
+        fq0=1.366e-01, width=5.702e-05, duty_cycle=0.19, strength=3.573e+01,
+        std=1.605e+01, timescale=1.70e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.459e-01, width=5.471e-05, duty_cycle=0.30, strength=2.111e+02,
-        std=2.644e+02, timescale=1.39e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.458e-01, width=1.015e-04, duty_cycle=0.31, strength=3.639e+01,
+        std=1.759e+01, timescale=1.13e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.832e-01, width=5.197e-05, duty_cycle=1.00, strength=7.962e+02,
-        std=9.578e+02, timescale=np.inf, phase_dstn=stats.norm(0.22, 0.21)),
+        fq0=1.499e-01, width=6.449e-05, duty_cycle=1.00, strength=2.472e+01,
+        std=5.394e+00, timescale=np.inf, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.458e-01, width=5.001e-05, duty_cycle=0.32, strength=2.501e+02,
-        std=3.275e+02, timescale=1.51e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.050e-01, width=3.986e-05, duty_cycle=1.00, strength=2.301e+01,
+        std=5.854e+00, timescale=np.inf, phase_dstn=stats.norm(-1.61, 0.20)
+    ),
     RfiStation(
-        fq0=1.050e-01, width=7.348e-05, duty_cycle=1.00, strength=1.075e+03,
-        std=1.044e+03, timescale=np.inf, phase_dstn=stats.norm(-1.62, 0.05)),
+        fq0=1.051e-01, width=5.042e-05, duty_cycle=1.00, strength=2.098e+01,
+        std=6.620e+00, timescale=np.inf, phase_dstn=stats.norm(-1.59, 0.37)
+    ),
     RfiStation(
-        fq0=1.457e-01, width=4.038e-05, duty_cycle=0.27, strength=1.087e+02,
-        std=1.243e+02, timescale=7.13e+01, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.363e-01, width=4.016e-05, duty_cycle=0.20, strength=3.827e+01,
+        std=1.897e+01, timescale=1.56e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.912e-01, width=1.617e-04, duty_cycle=1.00, strength=3.563e+02,
-        std=3.740e+02, timescale=np.inf, phase_dstn=stats.norm(1.05, 0.30)),
+        fq0=1.832e-01, width=5.458e-05, duty_cycle=1.00, strength=1.522e+01,
+        std=5.253e+00, timescale=np.inf, phase_dstn=stats.norm(-0.31, 0.42)
+    ),
     RfiStation(
-        fq0=1.055e-01, width=6.966e-05, duty_cycle=0.99, strength=1.179e+02,
-        std=1.335e+02, timescale=1.20e+03, phase_dstn=stats.norm(1.40, 0.10)),
+        fq0=1.831e-01, width=5.299e-05, duty_cycle=1.00, strength=1.683e+01,
+        std=6.243e+00, timescale=np.inf, phase_dstn=stats.norm(-1.68, 0.30)
+    ),
     RfiStation(
-        fq0=1.064e-01, width=7.175e-05, duty_cycle=0.71, strength=1.400e+02,
-        std=1.545e+02, timescale=9.24e+01, phase_dstn=stats.norm(-1.45, 0.16)),
+        fq0=1.055e-01, width=6.705e-05, duty_cycle=0.99, strength=2.474e+01,
+        std=7.574e+00, timescale=1.05e+03, phase_dstn=stats.norm(1.30, 0.27)
+    ),
     RfiStation(
-        fq0=1.751e-01, width=5.691e-05, duty_cycle=1.00, strength=1.016e+02,
-        std=9.531e+01, timescale=np.inf, phase_dstn=stats.norm(-1.57, 0.80)),
+        fq0=1.751e-01, width=4.584e-05, duty_cycle=1.00, strength=1.866e+01,
+        std=8.000e+00, timescale=np.inf, phase_dstn=stats.norm(-2.02, 0.59)
+    ),
     RfiStation(
-        fq0=1.063e-01, width=6.893e-05, duty_cycle=0.92, strength=9.980e+01,
-        std=1.057e+02, timescale=3.43e+02, phase_dstn=stats.norm(2.44, 0.14)),
+        fq0=1.078e-01, width=6.927e-05, duty_cycle=0.92, strength=3.758e+01,
+        std=2.028e+01, timescale=2.27e+02, phase_dstn=stats.norm(0.29, 0.77)
+    ),
     RfiStation(
-        fq0=1.069e-01, width=1.283e-04, duty_cycle=0.86, strength=9.021e+01,
-        std=8.039e+01, timescale=1.78e+02, phase_dstn=stats.norm(-2.77, 0.26)),
+        fq0=1.752e-01, width=4.882e-05, duty_cycle=1.00, strength=1.962e+01,
+        std=8.949e+00, timescale=np.inf, phase_dstn=stats.norm(2.18, 0.76)
+    ),
     RfiStation(
-        fq0=1.052e-01, width=7.576e-05, duty_cycle=1.00, strength=4.233e+01,
-        std=5.071e+01, timescale=8.50e+03, phase_dstn=stats.norm(-2.59, 0.30)),
+        fq0=1.065e-01, width=6.324e-05, duty_cycle=0.20, strength=2.756e+01,
+        std=1.552e+01, timescale=2.89e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.072e-01, width=8.233e-05, duty_cycle=0.50, strength=3.351e+01,
-        std=2.639e+01, timescale=5.99e+01, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.071e-01, width=3.824e-04, duty_cycle=0.05, strength=3.100e+01,
+        std=1.921e+01, timescale=1.83e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
     RfiStation(
-        fq0=1.892e-01, width=4.631e-05, duty_cycle=1.00, strength=7.677e+01,
-        std=7.196e+01, timescale=np.inf, phase_dstn=stats.norm(2.07, 0.21)),
+        fq0=1.062e-01, width=3.474e-05, duty_cycle=0.77, strength=2.680e+01,
+        std=1.616e+01, timescale=3.13e+02, phase_dstn=stats.norm(0.78, 0.96)
+    ),
     RfiStation(
-        fq0=1.057e-01, width=4.545e-05, duty_cycle=0.92, strength=9.260e+00,
-        std=6.854e+00, timescale=2.95e+02, phase_dstn=stats.uniform(-np.pi, np.pi)),
+        fq0=1.892e-01, width=4.412e-05, duty_cycle=1.00, strength=1.811e+01,
+        std=8.238e+00, timescale=np.inf, phase_dstn=stats.norm(1.83, 0.33)
+    ),
     RfiStation(
-        fq0=1.057e-01, width=7.239e-05, duty_cycle=0.89, strength=9.449e+00,
-        std=6.684e+00, timescale=2.85e+02, phase_dstn=stats.uniform(-np.pi, np.pi))
+        fq0=1.052e-01, width=6.855e-05, duty_cycle=0.99, strength=2.183e+01,
+        std=1.226e+01, timescale=1.12e+03, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.811e-01, width=5.833e-05, duty_cycle=1.00, strength=1.748e+01,
+        std=9.853e+00, timescale=np.inf, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.750e-01, width=5.054e-05, duty_cycle=0.27, strength=1.961e+01,
+        std=1.113e+01, timescale=2.65e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.879e-01, width=9.743e-05, duty_cycle=0.15, strength=1.242e+01,
+        std=8.007e+00, timescale=4.50e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.864e-01, width=4.883e-04, duty_cycle=0.29, strength=1.300e+01,
+        std=8.854e+00, timescale=9.06e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.057e-01, width=1.153e-04, duty_cycle=0.93, strength=2.434e+01,
+        std=1.684e+01, timescale=2.89e+02, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.883e-01, width=4.883e-04, duty_cycle=0.29, strength=1.325e+01,
+        std=9.096e+00, timescale=6.84e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.875e-01, width=4.883e-04, duty_cycle=0.43, strength=1.449e+01,
+        std=9.427e+00, timescale=5.16e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.896e-01, width=1.980e-04, duty_cycle=0.33, strength=1.177e+01,
+        std=7.651e+00, timescale=9.44e+01, phase_dstn=stats.norm(-1.74, 0.99)
+    ),
+    RfiStation(
+        fq0=1.049e-01, width=5.042e-05, duty_cycle=1.00, strength=2.308e+01,
+        std=1.049e+01, timescale=np.inf, phase_dstn=stats.norm(-0.24, 0.59)
+    ),
+    RfiStation(
+        fq0=1.942e-01, width=7.459e-05, duty_cycle=0.27, strength=8.380e+00,
+        std=7.354e+00, timescale=2.00e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.938e-01, width=4.883e-04, duty_cycle=0.47, strength=9.759e+00,
+        std=7.578e+00, timescale=4.19e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.943e-01, width=4.883e-04, duty_cycle=0.51, strength=7.670e+00,
+        std=6.670e+00, timescale=2.81e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
+    RfiStation(
+        fq0=1.945e-01, width=4.883e-04, duty_cycle=0.75, strength=5.159e+00,
+        std=7.112e+00, timescale=5.04e+01, phase_dstn=stats.uniform(-np.pi, np.pi)
+    ),
 ]
 
 
