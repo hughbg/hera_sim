@@ -5,7 +5,14 @@ import numpy as np
 from astropy.units import sday
 from attr import validators as vld
 from scipy import stats
+from scipy.integrate import cumtrapz
+from scipy.interpolate import InterpolatedUnivariateSpline as spline
 
+try:
+    from statsmodels.sandbox.distributions.extra import pdf_mvsk
+    HAVE_STATSMODELS = True
+except ImportError:
+    HAVE_STATSMODELS = False
 
 @attr.s(frozen=True, kw_only=True)
 class RfiStation:
@@ -340,9 +347,9 @@ def rfi_stations(fqs, lsts, stations=HERA_RFI_STATIONS, rfi=None):
     return rfi
 
 
-def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength_mean=20.0,
-                strength_std=0.6, integration_time=10.7,
-                presence_frac=0.15, time_width_mean=10.7, time_width_std=0.6):
+def rfi_impulse(fqs, lsts, rfi=None, chance=0.008, strength_mean=26.23,
+                strength_std=0.615, integration_time=10.7,
+                presence_frac=0.18, time_width_mean=10.2, time_width_std=0.7):
     """
     Generate an (NTIMES,NFREQS) waterfall containing RFI impulses that
     are localized in time but span the entire frequency band.
@@ -403,9 +410,51 @@ def rfi_impulse(fqs, lsts, rfi=None, chance=0.001, strength_mean=20.0,
 
     return rfi
 
+def rfi_gpu_fart(fqs, lsts, rfi=None, width=32, ngpus=8, channel0=0, chance=[0.0187, 0.9646],
+                 ratio_mvsk = [-0.0155, 0.0176, 0.0183, 2.9886],
+                 strength_std=):
+
+    assert HAVE_STATSMODELS, "the GPU distribution cannot be modeled without the statsmodels package"
+
+    if rfi is None:
+        rfi = np.zeros((lsts.size, fqs.size), dtype=np.complex)
+    assert rfi.shape == (lsts.size, fqs.size), "rfi is not shape (lsts.size, fqs.size)"
+
+    assert len(chance) == 3 and sum(chance) <= 1, "'chance' must be a 2-tuple with the probabilities that two channels will both be on or both be off"
+
+    onoff = (1 - sum(chance))/2  # divide by two to account for on-off and off-on
+    fullchance = chance[0] + onoff
+    times = []
+    times.append(np.random.binomial(1, fullchance[0], size=len(lsts)))
+
+    left_edges = np.arange(channel0, len(lsts), ngpus*width)
+    p = np.where(times[0], chance[0] / fullchance, onoff / (chance[1] + onoff))
+
+    if len(left_edges) > 1:
+        for edge in left_edges[1:]:
+            times.append(np.random.binomial(1, p))
+
+    def draw_ratios(ratio_mvsk, size):
+        pdf = pdf_mvsk(ratio_mvsk)
+        x = np.linspace(-2, 2, 1000)
+        cdf = cumtrapz(pdf(x), x=x)
+        icdf = spline(cdf, x)
+        x = np.random.uniform(0, 1, size=size)
+        return icdf(x)
+
+    for time_array, edge in zip(times, left_edges):
+        rfi[time_array, edge:edge+width] *= draw_ratios(ratio_mvsk, size=(sum(time_array), width ))
+
+    return rfi
+
 def rfi_blip(fqs, lsts, rfi=None, chance=0.001, strength_mean=20.0,
              strength_std=0.6, bandwidth):
-    # should this be merged into a single function with arbitrary time- freq- width?
+
+    def draw_width(n=1000, index=1.3, min_width=9):
+        y = np.random.uniform(0, 1, size=n)
+        return min_width * (1 - y) ** (1 / (1 - index))
+
+
 
 
 # XXX reverse lsts and fqs?
