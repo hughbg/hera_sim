@@ -176,22 +176,18 @@ class VisCPU(VisibilitySimulator):
         """
         eq2tops = self.get_eq2tops()
         beam_lm = self.get_beam_lm()
-       
-        visfull = np.zeros_like(self.uvdata.data_array,
-                                dtype=self._complex_dtype)
 
-        self._vis_cpu(
-            vis_output=visfull,
+        return self._vis_cpu(
             antpos=self.antpos,
             frequencies=self.freqs,
             eq2tops=eq2tops,
             crd_eq=crd_eq,
             I_skies=I,
             beam_lm=beam_lm,
+            vis_spec=(self.uvdata.data_array.shape, self._complex_dtype),
             precision=self._precision
         )
 
-        return visfull
 
     def _simulate_diffuse(self):
         """
@@ -241,7 +237,7 @@ class VisCPU(VisibilitySimulator):
         return vis
 
 
-def vis_cpu(vis_output, antpos, frequencies, eq2tops, crd_eq, I_skies, beam_lm,
+def vis_cpu(antpos, frequencies, eq2tops, crd_eq, I_skies, beam_lm, vis_spec,
             precision=1):
     """
     Calculate visibility from an input intensity map and beam model.
@@ -306,6 +302,8 @@ def vis_cpu(vis_output, antpos, frequencies, eq2tops, crd_eq, I_skies, beam_lm,
     v = np.empty((nant, npix), dtype=complex_dtype)
     crd_eq = crd_eq.astype(real_dtype)
 
+    visfull = np.zeros(vis_spec[0], dtype=vis_spec[1])
+
     # Loop over frequency and time samples.
     for index in range(len(frequencies)): 
         
@@ -355,5 +353,6 @@ def vis_cpu(vis_output, antpos, frequencies, eq2tops, crd_eq, I_skies, beam_lm,
             indices = np.triu_indices(vis.shape[1])
             vis_upper_tri = vis[:, indices[0], indices[1]]
 
-            vis_output[:, 0, index, 0] = vis_upper_tri.flatten()
+            visfull[:, 0, index, 0] = vis_upper_tri.flatten()
             
+    return visfull
