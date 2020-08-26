@@ -312,9 +312,6 @@ def vis_cpu(antpos, frequencies, eq2tops, crd_eq, I_skies, beam_lm, vis_spec,
         # negative sky.
         Isqrt = np.sqrt(I_skies[index]).astype(real_dtype)
 
-        # Note that the beam could have different shape for each
-        # frequency. This is disallowed for thr GPU code for memory
-        # layout reasons.
         bm_cube = beam_lm[:, index]
         bm_pix = bm_cube.shape[-1]
         assert bm_cube.shape == (
