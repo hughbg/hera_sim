@@ -1,0 +1,18 @@
+freq:
+    Nfreqs: 50
+    start_freq: 140000000.0
+    channel_width: 400000.0
+    
+time:
+    Ntimes: 500
+    start_time: 2458119.5
+    integration_time: 30.0
+    
+telescope:
+    array_layout: 'array_layout.csv'
+    telescope_config_name: 'telescope.yaml'
+    
+sources:
+    catalog: 'mock'
+    mock_arrangement: 'hera_text'
+    time: 2458119.5
