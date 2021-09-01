@@ -232,7 +232,7 @@ class VisCPU(VisibilitySimulator):
             future, this method can be modified to only return one
             matrix for each beam.
         """
-        return np.asarray(
+        out = np.asarray(
             [
                 convs.uvbeam_to_lm(
                     self.beams[idx],
