@@ -244,6 +244,14 @@ class VisCPU(VisibilitySimulator):
             ]
         )
 
+        if self.polarized:
+            # shape FREQ, NAXES, NFEEDS, NANT, NPIX, NPIX
+            return np.transpose(out, (1, 2, 0, 3, 4, 5))
+        else:
+            return out
+
+
+
     def get_diffuse_crd_eq(self):
         """
         Calculate equatorial coords of HEALPix sky pixels (Cartesian).
